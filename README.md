@@ -34,14 +34,15 @@ c.get_image()
 ``` 
 The corresponding DiffVG scene is cleared when =background= is called and then constructed as each drawing method is called. Calling =render= at the end rasterizes the scene while allowing gradient propagation to any parameter used in the drawing procedures.
 
-Optimizing a scene involves re-drawing the scene at each optimization step and eventually using the otuput of =render= to compute losses in image space.
+Optimizing a scene involves re-drawing the scene at each optimization step and eventually using the otuput of `render` to compute losses in image space.
 
 ### Optimization example
-While it is possible to explictly pass in tensors to the =DiffCanvas= drawing methods and explictly optimizing these, the API allows you to do so more concisely by using the =c.var(value, group_name)= syntax. This method returns a PyTorch tensor with =requires_grad=True=. Providing a =group_name= caches the tensor so it can be retrieved with =c.get_vars(group_name)= and passed to an optimizer.
+While it is possible to explictly pass in tensors to the `DiffCanvas` drawing methods and explictly optimizing these, the API allows you to do so more concisely by using the `c.var(value, group_name)` syntax. This method returns a PyTorch tensor with `requires_grad=True`. Providing a `group_name` caches the tensor so it can be retrieved with `c.get_vars(group_name)` and passed to an optimizer.
 
 > Note: while this caching method saves typing, it expects the drawing order to remain unchanged for each step of the optimization. 
 
 Here is a simple example of an optimization loop that adapts a series of curves to minimize the L1 error with a target image:
+
 ``` python
 import os
 import torch
@@ -166,12 +167,12 @@ After rendering, the result is stored in `canvas.img`. Retrieve it as a PIL imag
 | `multibezier(points, close=False)` | Draw a sequence of cubic Bézier segments. |
 | `curve(points, close=False)` | Draw a smooth cardinal spline through the given points. |
 | `shape(obj, close=False)` | Draw a `Shape` object or a list of polylines. |
-| =rect(x, y, w, h, radius=None)= or =rectangle(...)= | Draw a rectangle. Optional =radius= for rounded corners. |
-| =square(x, y, size)= | Draw a square. |
-| =ellipse(x, y, w, h)= | Draw an ellipse. |
-| =circle(x, y, r)= | Draw a circle. |
-| =triangle(a, b, c)= | Draw a triangle from three points. |
-| =quad(a, b, c, d)= | Draw a quadrilateral from four points. |
+| `rect(x, y, w, h, radius=None)` or `rectangle(...)` | Draw a rectangle. Optional `radius` for rounded corners. |
+| `square(x, y, size)` | Draw a square. |
+| `ellipse(x, y, w, h)` | Draw an ellipse. |
+| `circle(x, y, r)` | Draw a circle. |
+| `triangle(a, b, c)` | Draw a triangle from three points. |
+| `quad(a, b, c, d)` | Draw a quadrilateral from four points. |
 
 ### Complex Shapes
 
