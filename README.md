@@ -29,10 +29,91 @@ c.stroke_weight(2.0)
 c.polyline([[50, 50], [200, 50], [200, 200], [50, 200]], close=True)
 
 # Render the scene (differentiable, img contains the resulting tensor)
-img = canvas.render()
+img = c.render() # Returns tensor
 c.get_image()
-
 ``` 
+The corresponding DiffVG scene is cleared when =background= is called and then constructed as each drawing method is called. Calling =render= at the end rasterizes the scene while allowing gradient propagation to any parameter used in the drawing procedures.
+
+Optimizing a scene involves re-drawing the scene at each optimization step and eventually using the otuput of `render` to compute losses in image space.
+
+### Optimization example
+While it is possible to explictly pass in tensors to the `DiffCanvas` drawing methods and explictly optimizing these, the API allows you to do so more concisely by using the `c.var(value, group_name)` syntax. This method returns a PyTorch tensor with `requires_grad=True`. Providing a `group_name` caches the tensor so it can be retrieved with `c.get_vars(group_name)` and passed to an optimizer.
+
+> Note: while this caching method saves typing, it expects the drawing order to remain unchanged for each step of the optimization. 
+
+Here is a simple example of an optimization loop that adapts a series of curves to minimize the L1 error with a target image:
+
+``` python
+import os
+import torch
+import matplotlib.pyplot as plt
+from py5diff import DiffCanvas
+from PIL import Image
+from tqdm import tqdm
+import numpy as np
+
+target_img = Image.open('./spock256.jpg')
+w, h = target_img.size
+
+c = DiffCanvas(w, h)
+
+# This function will be called repeatedly during optimization
+# and the `c.var` variables will set on the first call to draw and then
+# change during optimization
+def draw(c):
+    c.background(1.0)
+    c.stroke(0); c.no_fill()
+    c.stroke_weight(2.0)
+    n_rows = 25
+    n_pts = 30
+    h = (c.height / n_rows)*0.1
+    for row_y in np.linspace(0, c.height, n_rows+2)[1:-1]:
+        x = np.linspace(0, c.width, n_pts)
+        y = row_y + c.var(np.random.uniform(-h, h, n_pts), 'offset')
+        c.curve(x, y)
+
+    c.render(prefiltering=True)
+    return c.img
+
+# Initial image and target
+draw(c)
+initial_img = c.get_image()
+target = c.to(np.array(target_img.convert('L'))/255)
+
+# Optimization loop
+optimizers = [
+    torch.optim.Adam(c.get_vars('offset'), lr=1.0),
+]
+
+for step in tqdm(range(250), 'Opt progress:'):
+    for opt in optimizers:
+        opt.zero_grad()
+    img = draw(c)
+    loss = (c.img.mean(dim=-1) - target).abs().mean() # L1
+    loss.backward()
+    for opt in optimizers:
+        opt.step()
+
+# Display
+plt.figure(figsize=(9,4)) 
+plt.subplot(131)
+plt.title('init'); plt.axis('off')
+plt.imshow(initial_img)
+
+plt.subplot(132)
+plt.title('target'); plt.axis('off')
+plt.imshow(target_img)
+
+plt.subplot(133)
+plt.title('optimizied'); plt.axis('off')
+plt.imshow(c.get_image())
+plt.tight_layout()
+plt.show()
+
+```
+
+![result](./examples/image_example_02.png)
+
 
 ## API Overview
 
@@ -51,7 +132,7 @@ canvas = DiffCanvas(width, height, device=None)
 canvas.render(prefiltering=False, num_samples=2, seed=0, sdf=False)
 ```
 
-- `prefiltering`: if `True`, uses an anti‑aliasing prefilter.
+- `prefiltering`: if `True`, uses an anti‑aliasing prefilter. Produces crisper lines, but does not support variable width strokes and produces artefacts in some cases.
 - `num_samples`: multisampling level.
 - `sdf`: if `True`, outputs a signed distance field.
 
@@ -86,6 +167,12 @@ After rendering, the result is stored in `canvas.img`. Retrieve it as a PIL imag
 | `multibezier(points, close=False)` | Draw a sequence of cubic Bézier segments. |
 | `curve(points, close=False)` | Draw a smooth cardinal spline through the given points. |
 | `shape(obj, close=False)` | Draw a `Shape` object or a list of polylines. |
+| `rect(x, y, w, h, radius=None)` or `rectangle(...)` | Draw a rectangle. Optional `radius` for rounded corners. |
+| `square(x, y, size)` | Draw a square. |
+| `ellipse(x, y, w, h)` | Draw an ellipse. |
+| `circle(x, y, r)` | Draw a circle. |
+| `triangle(a, b, c)` | Draw a triangle from three points. |
+| `quad(a, b, c, d)` | Draw a quadrilateral from four points. |
 
 ### Complex Shapes
 
