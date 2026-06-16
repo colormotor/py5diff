@@ -9,10 +9,10 @@ import copy
 from PIL import Image
 
 def make_mat(M, device, dtype):
-    return torch.vstack([torch.stack([torch.as_tensor(v) for v in row]) for row in M]).to(dtype).to(device)
+    return torch.vstack([torch.stack([torch.as_tensor(v).to(dtype).to(device) for v in row]) for row in M])
 
 def make_vec(*args, device, dtype):
-    return torch.stack([torch.as_tensor(v) for v in args]).to(dtype).to(device)
+    return torch.stack([torch.as_tensor(v).to(dtype).to(device) for v in args])
 
 def is_number(x):
     return isinstance(x, numbers.Number) or (isinstance(x, torch.Tensor) and x.numel() == 1)
@@ -670,7 +670,6 @@ class DiffCanvas:
         w, h = size
 
         if radius is None:
-            print(p, size)
             #return
         
             self.polyline(self._mat([
