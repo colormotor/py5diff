@@ -656,11 +656,11 @@ class DiffCanvas:
         x, y = p
         w, h = size
 
-        s = Shape()
-        s.begin_shape()
-
         if radius is None:
-            s.polyline(self._mat([
+            print(p, size)
+            #return
+        
+            self.polyline(self._mat([
                 [x, y],
                 [x + w, y],
                 [x + w, y + h],
@@ -819,8 +819,8 @@ class DiffCanvas:
         
         if mode == "corner":
             center = center + size
-            
-        self.ellipse(center, size, mode="center")
+
+        self.ellipse(center, size, size, mode="center")
 
     ###############################################
     # Scene management
@@ -1094,8 +1094,9 @@ class Shape:
 
     def _polyline(self, points, closed):
         self._ensure_mutable()
+        
         self._contour.append(torch.as_tensor(points))
-        nseg = len(points)
+        nseg = len(points)-1
         if closed:
             nseg += 1
         self._num_ctrl += [0]*nseg
