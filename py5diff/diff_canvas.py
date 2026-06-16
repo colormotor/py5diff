@@ -981,10 +981,13 @@ class DiffCanvas:
         return v
 
     def get_vars(self, group_name):
+        ''' Get vars for a given group name (alias `vars`)'''
         if group_name not in self._vars:
             return []
         return self._vars[group_name]
 
+    vars = get_vars
+    
     def clear_vars(self):
         self._vars = defaultdict(list)
         self._var_counters = defaultdict(int) # Use for auto id
@@ -993,15 +996,83 @@ class DiffCanvas:
     def _var_id(self, name, id):
         return f'{name}_{id}'
 
+
+class CanvasOptimizer:
+    def __init__(self, w, h):
+        self.c = DiffCanvas(w, h)
+        self.optimizers = []
+        self.schedulers = []
+        self.draw(self.c)
+        self.running = False
+        self.epoch = 0
+        self.num_opt_steps = 0
+        
+    ######################################
+    # Functions for user to override
+    def setup(self, c):
+        """Setup optimizers and schedulers
+           these must be added to `self.optimizers` and `self.schedulers`.
+           The lists will be cleared automatically when calling `run`
+        """
+        pass
+
+    def release(self):
+        """Optionally release heavy-weight objects"""
+        pass
     
-def num_bezier(n_ctrl, closed=False, degree=3):
-    if not is_number(n_ctrl):
-        n_ctrl = len(n_ctrl)
-    if closed:
-        n_ctrl += 1
-    return int((n_ctrl - 1) / degree)
+    def draw(self, c):
+        """Construct/render the scene. Called every step."""
+        pass
+    
+    def loss(self, img):
+        """Compute and return loss for each step"""
+        return 0.0
 
+    def postprocess(self, c):
+        """Optionally clamp values or other procedures after each opt step"""
+        pass
+    
+    ######################################
+    # Built in
 
+    def step(self):
+        # Peform an optimization step if optimizing
+        if not self.running:
+            return
+
+        for opt in self.optimizers:
+            opt.zero_grad()
+
+        img = self.draw(self.c)
+
+        if self.epoch >= self.num_opt_steps:
+            print("Stopping", self.epoch)
+            self.running = False
+            self.release()
+            return
+        
+        loss = self.loss(img)
+        loss.backward()
+        for opt in self.optimizers:
+            opt.step()
+        for sched in self.schedulers:
+            sched.step()
+        self.postprocess(self.c)
+        self.epoch += 1
+        
+        
+    def run(self, num_steps):
+        self.optimizers = []
+        self.schedulers = []
+        self.epoch = 0
+        self.num_opt_steps = num_steps
+        self.setup(self.c)
+        self.running = True
+        
+    def get_image(self):
+        return self.c.get_image()
+
+    
 class Shape:
     """
     Holds a list of contours, each contour being a sequence of drawing commands.
@@ -1268,6 +1339,15 @@ def is_compound(S):
     if (isinstance(S[0], torch.Tensor) or isinstance(S[0], np.ndarray)) and len(S[0].shape) > 1:
         return True
     return False
+
+
+def num_bezier(n_ctrl, closed=False, degree=3):
+    if not is_number(n_ctrl):
+        n_ctrl = len(n_ctrl)
+    if closed:
+        n_ctrl += 1
+    return int((n_ctrl - 1) / degree)
+
 
 def default_device():
     if torch.cuda.is_available():
