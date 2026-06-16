@@ -526,7 +526,7 @@ class DiffCanvas:
         """
         if len(args) == 1:
             points = self._to(args[0])
-        elif len(args) == 2:
+        elif len(args) > 1:
             points = torch.vstack([self._to(v) for v in args]).T
         else:
             raise ValueError("Wrong number of arguments")
@@ -553,7 +553,7 @@ class DiffCanvas:
         """
         if len(args) == 1:
             points = self._to(args[0])
-        elif len(args) == 2:
+        elif len(args) > 1:
             points = torch.vstack([self._to(v) for v in args]).T
         else:
             raise ValueError("Wrong number of arguments")
@@ -576,7 +576,7 @@ class DiffCanvas:
         """
         if len(args) == 1:
             points = self._to(args[0])
-        elif len(args) == 2:
+        elif len(args) > 1:
             points = torch.vstack([self._to(v) for v in args]).T
         else:
             raise ValueError("Wrong number of arguments")
@@ -855,9 +855,10 @@ class DiffCanvas:
         stroke_color = None
         if self.cur_stroke is not None:
             stroke_color = self.cur_stroke.to(self.device)
-                
+
+        
         group = pydiffvg.ShapeGroup(shape_ids=torch.tensor(shape_ids),
-                                    use_even_odd_rule=self._fill_rule=='evenodd',
+                                    use_even_odd_rule=self._fill_rule=='evenodd', #evenodd',
                                     fill_color=fill_color,
                                     stroke_color=stroke_color)
         group.shape_to_canvas = self._transform.to(self.device)
@@ -912,6 +913,7 @@ class DiffCanvas:
             return self.img
 
         with perf_timer('Serialize scene', False):
+            print('scene', self.groups, self.primitives)
             scene_args = pydiffvg.RenderFunction.serialize_scene(w, h,
                                                                 self.primitives,
                                                                 self.groups,
@@ -1276,14 +1278,17 @@ class Shape:
         for ctr in self.contours:
             if isinstance(ctr, tuple):
                 pts, nctrl, closed = ctr
+                
                 if pts.shape[1] > 2:
                     w = pts[:,2].to(c.device)
                 else:
                     w = torch.as_tensor(c._line_width).to(c.device)
+                
                 path = pydiffvg.Path(num_control_points=nctrl.to(c.device),
-                                    points=pts[:,:2].to(c.dtype).to(c.device),
-                                    stroke_width = w,
-                                    is_closed=closed)
+                                    points=pts[:,:2].contiguous().to(c.dtype).to(c.device),
+                                    stroke_width=w,
+                                     is_closed=closed,
+                                     use_distance_approx=False)
                 shapes.append(path)
             else: # Assume a diffVg object added externally by canvas
                 shapes.append(ctr)
