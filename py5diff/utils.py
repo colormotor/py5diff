@@ -6,6 +6,47 @@ import matplotlib.pyplot as plt
 from . import diff_canvas
 
 class CanvasOptimizer:
+    ''' Helper for optimization loops. Wraps a `DiffCanvas` instance
+    and provides callbacks for initialization (`init`), setting up optimizers (`setup`),
+    drawing (`draw`) loss computation (`loss`) and clipping values or other post processing oparations (`postprocess`).
+    To use this, subclass `CanvasOptimizer` with a class that overrides these methods, and then call `step` in a loop.
+
+    E.g.:
+
+    ```python
+    class MyCanvasOpt(CanvasOptimizer):
+        def init(self, c):
+            # Initialize parameters once before draw (optional)
+            ...
+    
+        def draw(self, c):
+            c.background(1.0)
+            ....
+            return c.render()
+            
+        def postprocess(self, c):
+            # Clamp values if necessary
+            with torch.no_grad():
+                for v in c.get_vars('some variables'):
+                    v.data.clamp_(0, 1)
+                
+        def setup(self, c):
+            self.optimizers = [
+                                torch.optim.Adam(c.get_vars('some variables'), lr=1.0),
+            ]
+            # optionally add schedulers to `self.schedulers`
+            
+
+        def loss(self, img):
+            # Compute some loss based on img (the output of the renderer at each step)
+            loss = ...
+            return loss
+
+        opt = MyCanvasOpt(w, h)
+
+    ```
+    '''
+    
     def __init__(self, w, h, verbose=False):
         self.c = diff_canvas.DiffCanvas(w, h)
         self.optimizers = []
@@ -88,6 +129,38 @@ class CanvasOptimizer:
 
     
 class MultiLoss:
+    """Helper for managing multiple losses organized by name and input
+    Keeps track of losses and enables visualization with matplotlib or py5canvas (implot)
+
+    Losses are registered with a name, callable, scalar weight, and an optional input
+    format list.  Calling the instance evaluates all registered losses and any
+    extra tensor kwargs whose name contains ``'loss'``, sums them, and records
+    per-term and total values.
+
+    **Input format convention**
+    ---------------------------
+    The ``inputs`` argument of ``add`` controls how the call arguments are
+    assembled:
+
+    * ``None``              -> ``fn(default)``
+    * ``[None, 'target']``  -> ``fn(default, kwargs['target'])``
+    * ``['a', 'b']``        -> ``fn(kwargs['a'], kwargs['b'])``
+
+    ``None`` inside a list refers to the first positional argument.
+
+    **Example usage**
+    -----------------
+
+    Example
+    -------
+    ```
+    ml = MultiLoss()
+    ml.add_loss('rgb', F.l1_loss, 1.0, inputs=[None, 'target'])
+    ml.add_loss('lpips', lpips_fn, 0.1, inputs=['aux', 'target'])
+    ...
+    loss = ml(pred_img, target=target_img, aux=aux_img)
+    ```
+    """
     def __init__(self, max_history=1000):
         self.items = {}      # name -> [loss_fn, weight]
         self.formats = {}    # name -> input format list / None
