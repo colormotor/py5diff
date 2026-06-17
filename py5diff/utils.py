@@ -3,7 +3,10 @@ from collections import defaultdict
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 from . import diff_canvas
+
+
 
 class CanvasOptimizer:
     ''' Helper for optimization loops. Wraps a `DiffCanvas` instance
@@ -43,7 +46,6 @@ class CanvasOptimizer:
             return loss
 
         opt = MyCanvasOpt(w, h)
-
     ```
     '''
     
@@ -290,3 +292,21 @@ class MultiLoss:
                 if i % n_cols != 0:
                     imgui.same_line()
                 imgui.text(text)
+
+
+class perf_timer:
+    def __init__(self, name='', verbose=True):
+        #if name and verbose:
+        #    print(name)
+        self.name = name
+        self.verbose = verbose
+        self.elapsed = 0
+        
+    def __enter__(self):
+        self.t = time.perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.elapsed = (time.perf_counter() - self.t)*1000
+        if self.name and self.verbose:
+            print('%s: elapsed time %.3f milliseconds'%(self.name, self.elapsed))

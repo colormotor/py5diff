@@ -641,6 +641,7 @@ class DiffCanvas:
         - =x, y, w, h=
         - any of the above with =radius=r= for rounded corners
         """
+        # TODO use rectangle primitive for non rounded case
         if mode is None:
             mode = self._rect_mode
         mode = mode.lower()
@@ -759,6 +760,9 @@ class DiffCanvas:
         - =cx, cy, w=               (circle)
         - =cx, cy, w, h=
         """
+        # Contructs the ellipse with Beziers since DiffVG does not support
+        # outlines for ellipse primitives. One more efficient option would be
+        # to check the stroke and create an ellipse primitive if stroke is not set
         if mode is None:
             mode = self._ellipse_mode
         mode = mode.lower()
@@ -886,15 +890,6 @@ class DiffCanvas:
 
         self.polyline(torch.vstack([a,b]))
 
-        
-    # def circle(self, *args, mode=None):
-    #     def geom(t):
-    #         c = t @ center
-    #         r_t = r if r.requires_grad else r  # handle scaling correctly…
-    #         return [self._circle_path(c, r_t)]
-    #     self._add_item(geom)
-    
-
     # Shape building (same as parent, but end_shape appends)
     def render(self, prefiltering=False, num_samples=2, seed=0, sdf=False):
         self.building = False
@@ -915,20 +910,18 @@ class DiffCanvas:
             self.img = bg
             return self.img
 
-        with perf_timer('Serialize scene', False):
-            scene_args = pydiffvg.RenderFunction.serialize_scene(w, h,
-                                                                self.primitives,
-                                                                self.groups,
-                                                                use_prefiltering=prefiltering,
-                                                                output_type=pydiffvg.OutputType.sdf if sdf
-                                                                else pydiffvg.OutputType.color)
-        with perf_timer('Render', False):
-            try:
-                img = pydiffvg.RenderFunction.apply(w, h, num_samples, num_samples, seed, None, *scene_args)
-            except RuntimeError as e:
-                print("RUNTIME ERROR IN RENDER")
-                print("Possibly wrong dtype in geometry, needs to be float32")
-                raise(e)
+        scene_args = pydiffvg.RenderFunction.serialize_scene(w, h,
+                                                            self.primitives,
+                                                            self.groups,
+                                                            use_prefiltering=prefiltering,
+                                                            output_type=pydiffvg.OutputType.sdf if sdf
+                                                            else pydiffvg.OutputType.color)
+        try:
+            img = pydiffvg.RenderFunction.apply(w, h, num_samples, num_samples, seed, None, *scene_args)
+        except RuntimeError as e:
+            print("RUNTIME ERROR IN RENDER")
+            print("Possibly wrong dtype in geometry, needs to be float32")
+            raise(e)
 
         if self._bg is not None:
             img = img[:, :, 3:4] * img[:, :, :3] + bg * (1 - img[:, :, 3:4])
@@ -1291,21 +1284,4 @@ def default_device():
     else:
         # DiffVG does not work well with ARM
         return torch.device('cpu')
-        
-
-class perf_timer:
-    def __init__(self, name='', verbose=True):
-        #if name and verbose:
-        #    print(name)
-        self.name = name
-        self.verbose = verbose
-        self.elapsed = 0
-        
-    def __enter__(self):
-        self.t = time.perf_counter()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.elapsed = (time.perf_counter() - self.t)*1000
-        if self.name and self.verbose:
-            print('%s: elapsed time %.3f milliseconds'%(self.name, self.elapsed))
+    
