@@ -1,7 +1,8 @@
 # py5diff - Processing-like Differentiable Vector Graphics
 
-`py5diff` provides a Processing‑inspired API (e.g., `push()`, `pop()`, `fill()`, `stroke()`, `line()`, `curve()`) for building *differentiable* 2D vector scenes. Under the hood it uses [pydiffvg](https://github.com/BachiLi/diffvg) and [PyTorch](https://pytorch.org), so all parameters are tensors, and gradients can flow through the rendering process. It provides an "immediate mode" API on top of DiffVG, making it easier to experiment or build geometry through the composition of differentiable operations.
+`py5diff` provides a Processing-inspired API (e.g., `push()`, `pop()`, `fill()`, `stroke()`, `line()`, `curve()`) for building *differentiable* 2D vector scenes. Under the hood it uses [pydiffvg](https://github.com/BachiLi/diffvg) and [PyTorch](https://pytorch.org), so all parameters are tensors and gradients can flow through the rendering process. It provides an "immediate mode" API on top of DiffVG, making it easier to experiment and build geometry through the composition of differentiable operations.
 
+Py5diff can be used standalone in Python scripts or Jupyter notebooks, but its API is almost identical to [Py5canvas](https://github.com/colormotor/py5canvas), so it can also be used alongside it to create sketches that leverage differentiable rasterization.
 ## Installation
 
 Prerequisites:
@@ -41,7 +42,7 @@ All drawing functions accept python sequences (e.g. lists, tuples, numpy arrays 
 
 This method returns a PyTorch tensor with `requires_grad=True` and providing a `group_name` caches the tensor so it can be retrieved later with `c.get_vars(group_name)` and passed on to an optimizer of choice. The values passed in to `c.var` will be used as initial values for the tensor, but in subsequent calls to the drawing sequence `DiffCanvas` will use the cached tensors instead of creating new ones, as long as the same variable creation order is maintained.
 
-> Note: while this caching method saves typing, it expects the drawing order and tensor sizes to remain unchanged for each step of the optimization. 
+> **Note:** while this caching method saves typing, it expects the drawing order and tensor sizes to remain unchanged for each step of the optimization. 
 
 Here is a simple example of an optimization loop that adapts a series of curves to minimize the L1 error with a target image and displays the results:
 
