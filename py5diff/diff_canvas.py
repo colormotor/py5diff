@@ -880,9 +880,9 @@ class DiffCanvas:
     # Override simple shapes
     def line(self, *args):
         if len(args) == 2:
-            a, b = [torch.as_tensor(v) for v in args]
+            a, b = [self._to(v) for v in args]
         elif len(args) == 4:
-            ax, ay, bx, by = [torch.as_tensor(v) for v in args]
+            ax, ay, bx, by = [self._to(v) for v in args]
             a = torch.stack([ax, ay])
             b = torch.stack([bx, by])
         else:
@@ -988,6 +988,10 @@ class DiffCanvas:
             return []
         return self._vars[group_name]
 
+    def get_points(self):
+        ''' Get points from DiffVG primitives'''
+        return [prim.points for prim in self.primitives]
+    
     vars = get_vars
     
     def clear_vars(self):
