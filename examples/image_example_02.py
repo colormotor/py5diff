@@ -2,7 +2,7 @@
 import os
 import torch
 import matplotlib.pyplot as plt
-from py5diff import DiffCanvas
+from dpy5 import DiffCanvas
 from PIL import Image
 from tqdm import tqdm
 import numpy as np

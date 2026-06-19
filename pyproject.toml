@@ -7,7 +7,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "py5diff"
+name = "dpy5"
 version = "0.0.1"
 description = "Processing like API for differentiable vector graphics"
 readme = "README.md"
@@ -22,8 +22,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/colormotor/py5diff"
-Issues = "https://github.com/colormotor/py5diff/issues"
+Homepage = "https://github.com/colormotor/dpy5"
+Issues = "https://github.com/colormotor/dpy5/issues"
 
 [tool.setuptools]
-packages = ["py5diff"]
+packages = ["dpy5"]

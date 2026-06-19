@@ -3,15 +3,15 @@ from py5canvas import *
 from slimgui import imgui, implot
 
 from importlib import reload
-import py5diff
-from py5diff import diff_canvas as dc
+import dpy5
+from dpy5 import diff_canvas as dc
 reload(dc)
-reload(py5diff)
+reload(dpy5)
 
 import torch
 import matplotlib.pyplot as plt
 
-from py5diff import DiffCanvas, CanvasOptimizer
+from dpy5 import DiffCanvas, CanvasOptimizer
 from PIL import Image
 import numpy as np
 

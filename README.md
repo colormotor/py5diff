@@ -2,7 +2,7 @@
 
 `py5diff` provides a Processing-inspired API (e.g., `push()`, `pop()`, `fill()`, `stroke()`, `line()`, `curve()`) for building *differentiable* 2D vector scenes. Under the hood it uses [pydiffvg](https://github.com/BachiLi/diffvg) and [PyTorch](https://pytorch.org), so all parameters are tensors and gradients can flow through the rendering process. It provides an "immediate mode" API on top of DiffVG, making it easier to experiment and build geometry through the composition of differentiable operations.
 
-Py5diff can be used standalone in Python scripts or Jupyter notebooks, but its API is almost identical to [Py5canvas](https://github.com/colormotor/py5canvas), so it can also be used alongside it to create sketches that leverage differentiable rasterization.
+dpy5 can be used standalone in Python scripts or Jupyter notebooks, but its API is almost identical to [Py5canvas](https://github.com/colormotor/py5canvas), so it can also be used alongside it to create sketches that leverage differentiable rasterization.
 ## Installation
 
 Prerequisites:
@@ -20,7 +20,7 @@ pip install -e .
 
 ```python
 import torch
-from py5diff import DiffCanvas
+from dpy5 import DiffCanvas
 # Create a canvas (width, height)
 c = DiffCanvas(256, 256)
 c.background(1.0)               # white background
@@ -50,7 +50,7 @@ Here is a simple example of an optimization loop that adapts a series of curves 
 import os
 import torch
 import matplotlib.pyplot as plt
-from py5diff import DiffCanvas
+from dpy5 import DiffCanvas
 from PIL import Image
 from tqdm import tqdm
 import numpy as np
